@@ -1,0 +1,113 @@
+import express from "express";
+import cookieParser from "cookie-parser";
+import path from "path";
+import cors from "cors";
+import session from "express-session";
+import passport from "passport";
+import { Strategy as OpenIDConnectStrategy } from "passport-openidconnect";
+
+import authRoutes from "./routes/auth.route.js";
+import messageRoutes from "./routes/message.route.js";
+import { connectDB } from "./lib/db.js";
+import { ENV } from "./lib/env.js";
+import { app, server, io, setupSocketHandlers } from "./lib/socket.js";
+import { upsertUser } from "./models/User.js";
+import { createSocketAuthMiddleware } from "./middleware/socket.auth.middleware.js";
+
+const __dirname = path.resolve();
+
+const PORT = ENV.PORT || 3000;
+
+// ── Session middleware (shared between Express and Socket.IO) ──
+const sessionMiddleware = session({
+  secret: ENV.SESSION_SECRET || "change-this-in-production",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: ENV.NODE_ENV !== "development",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
+});
+
+// ── Passport (IBM App ID via OpenID Connect) ──
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
+
+if (ENV.APP_ID_CLIENT_ID && ENV.APP_ID_ISSUER) {
+  passport.use(
+    "appid",
+    new OpenIDConnectStrategy(
+      {
+        issuer: ENV.APP_ID_ISSUER,
+        authorizationURL: ENV.APP_ID_AUTHORIZATION_URL,
+        tokenURL: ENV.APP_ID_TOKEN_URL,
+        userInfoURL: ENV.APP_ID_USERINFO_URL,
+        clientID: ENV.APP_ID_CLIENT_ID,
+        clientSecret: ENV.APP_ID_CLIENT_SECRET,
+        callbackURL: ENV.APP_ID_CALLBACK_URL,
+        scope: ["openid", "profile", "email"],
+      },
+      async (issuer, profile, done) => {
+        try {
+          // Extract user info from the App ID profile
+          const email =
+            profile.emails?.[0]?.value ||
+            profile._json?.email ||
+            "";
+          const fullName =
+            profile.displayName ||
+            profile._json?.name ||
+            email ||
+            "Chat User";
+
+          // Upsert user document in IBM Cloudant
+          const user = await upsertUser({
+            id: profile.id || profile.sub,
+            email,
+            fullName,
+            profilePic: profile._json?.picture || "",
+          });
+
+          done(null, user);
+        } catch (error) {
+          done(error);
+        }
+      }
+    )
+  );
+} else {
+  console.warn("IBM App ID is not configured. Set App ID env vars.");
+}
+
+// ── Express middleware ──
+app.use(express.json({ limit: "5mb" }));
+app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+app.use(cookieParser());
+app.use(sessionMiddleware);
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ── Routes ──
+app.use("/api/auth", authRoutes);
+app.use("/api/messages", messageRoutes);
+
+// ── Socket.IO auth (uses the same session middleware) ──
+io.use(createSocketAuthMiddleware(sessionMiddleware));
+setupSocketHandlers();
+
+// ── Production: serve frontend build ──
+if (ENV.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+  app.get("*", (_, res) => {
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  });
+}
+
+// ── Start ──
+server.listen(PORT, () => {
+  console.log("Server running on port: " + PORT);
+  connectDB();
+});
