@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import recognizeMicrophone from "watson-speech/speech-to-text/recognize-microphone";
+import SpeechToTextV1 from "watson-speech/speech-to-text";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
@@ -18,12 +18,13 @@ export const useSTT = () => {
       }
 
       // 2. Start Watson Speech STT
-      const stream = recognizeMicrophone({
+      const stream = SpeechToTextV1.recognizeMicrophone({
         accessToken,
         url,
         extractResults: true,
-        format: true, // adds punctuation and capitalization
+        format: true,
         objectMode: true,
+        model: "en-US_BroadbandModel",
       });
 
       streamRef.current = stream;
@@ -37,9 +38,9 @@ export const useSTT = () => {
       });
 
       stream.on("error", (err) => {
-        console.error("STT Error:", err);
+        console.error("FULL STT ERROR OBJECT:", err);
         const errorMsg = err.message || "Connection failed";
-        toast.error(`Speech to Text failed: ${errorMsg}. Ensure you are on localhost or HTTPS.`);
+        toast.error(`Speech to Text failed: ${errorMsg}. Check console for details.`);
         stopRecording();
       });
 

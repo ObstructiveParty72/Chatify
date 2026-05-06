@@ -11,4 +11,7 @@ export default defineConfig({
       protocolImports: true,
     }),
   ],
+  define: {
+    global: 'window',
+  },
 })

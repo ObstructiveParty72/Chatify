@@ -19,7 +19,7 @@ router.get("/token", protectRoute, async (req, res) => {
     
     res.json({
       accessToken: tokenResponse.result.access_token,
-      url: ENV.SPEECH_TO_TEXT_URL,
+      url: ENV.SPEECH_TO_TEXT_URL?.replace(/\/$/, ""),
     });
   } catch (error) {
     console.error("Error fetching STT token:", error);
