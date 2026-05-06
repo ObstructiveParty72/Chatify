@@ -9,7 +9,7 @@ function ChatHeader() {
   const { onlineUsers, authUser } = useAuthStore();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isOnline = !selectedUser.isGroup && onlineUsers.includes(selectedUser._id);
-  const isAdmin = selectedUser.isGroup && selectedUser.adminId === authUser._id;
+  const isAdmin = selectedUser.isGroup && selectedUser.adminId === authUser?._id;
 
   useEffect(() => {
     const handleEscKey = (event) => {

@@ -41,9 +41,9 @@ function ChatContainer() {
             {messages.map((msg) => (
               <div
                 key={msg._id}
-                className={`chat ${msg.senderId === authUser._id ? "chat-end" : "chat-start"}`}
+                className={`chat ${msg.senderId === authUser?._id ? "chat-end" : "chat-start"}`}
               >
-                {selectedUser.isGroup && msg.senderId !== authUser._id && (
+                {selectedUser.isGroup && msg.senderId !== authUser?._id && (
                   <div className="chat-header mb-1 text-xs text-slate-400 ml-1">
                     {msg.senderName}
                   </div>
