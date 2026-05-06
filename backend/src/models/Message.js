@@ -34,7 +34,6 @@ export async function findMessagesBetween(userIdA, userIdB) {
         { senderId: userIdB, receiverId: userIdA },
       ],
     },
-    sort: [{ createdAt: "asc" }],
     limit: 500,
   });
 

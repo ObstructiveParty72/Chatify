@@ -28,7 +28,6 @@ export async function findGroupsByMember(userId) {
       type: "group",
       members: { "$elemMatch": { "$eq": userId } }
     },
-    sort: [{ createdAt: "desc" }],
     limit: 100,
   });
 

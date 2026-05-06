@@ -119,17 +119,22 @@ export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
 
+    console.log("Fetching chat partners for user:", loggedInUserId);
     const partnerIds = await findChatPartnerIds(loggedInUserId);
+    console.log("Found partner IDs:", partnerIds);
+    
     const chatPartners = await findUsersByIds(partnerIds);
+    console.log("Found chat partners (users):", chatPartners.length);
     
     const myGroups = await findGroupsByMember(loggedInUserId);
+    console.log("Found groups:", myGroups.length);
 
     // Combine users and groups
     const allChats = [...chatPartners, ...myGroups];
 
     res.status(200).json(allChats);
   } catch (error) {
-    console.error("Error in getChatPartners: ", error.message);
+    console.error("Error in getChatPartners:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

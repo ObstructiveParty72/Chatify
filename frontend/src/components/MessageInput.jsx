@@ -7,24 +7,22 @@ import { useSTT } from "../hooks/useSTT";
 
 function MessageInput() {
   const { playRandomKeyStrokeSound } = useKeyboardSound();
-  const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const { sendMessage, isSoundEnabled, messageText, setMessageText } = useChatStore();
   const { isRecording, startRecording, stopRecording } = useSTT();
 
   const fileInputRef = useRef(null);
 
-  const { sendMessage, isSoundEnabled } = useChatStore();
-
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!text.trim() && !imagePreview) return;
+    if (!messageText.trim() && !imagePreview) return;
     if (isSoundEnabled) playRandomKeyStrokeSound();
 
     sendMessage({
-      text: text.trim(),
+      text: messageText.trim(),
       image: imagePreview,
     });
-    setText("");
+    setMessageText("");
     setImagePreview("");
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (isRecording) stopRecording();
@@ -41,11 +39,7 @@ function MessageInput() {
           console.warn("Received empty transcript");
           return;
         }
-        setText((prev) => {
-          const next = prev + (prev ? " " : "") + transcript.trim();
-          console.log("Setting text to:", next);
-          return next;
-        });
+        setMessageText(messageText + (messageText ? " " : "") + transcript.trim());
       });
     }
   };
@@ -91,9 +85,9 @@ function MessageInput() {
       <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex space-x-4">
         <input
           type="text"
-          value={text}
+          value={messageText}
           onChange={(e) => {
-            setText(e.target.value);
+            setMessageText(e.target.value);
             isSoundEnabled && playRandomKeyStrokeSound();
           }}
           className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4"
