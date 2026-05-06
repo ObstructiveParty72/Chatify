@@ -38,7 +38,8 @@ export const useSTT = () => {
 
       stream.on("error", (err) => {
         console.error("STT Error:", err);
-        toast.error("Speech to Text failed. Please check your microphone.");
+        const errorMsg = err.message || "Connection failed";
+        toast.error(`Speech to Text failed: ${errorMsg}. Ensure you are on localhost or HTTPS.`);
         stopRecording();
       });
 
