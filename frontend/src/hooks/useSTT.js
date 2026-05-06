@@ -1,61 +1,65 @@
 import { useState, useRef } from "react";
-import SpeechToTextV1 from "watson-speech/speech-to-text";
-import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
 export const useSTT = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const streamRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  const startRecording = async (onTranscript) => {
+  const startRecording = (onTranscript) => {
+    // Check for browser support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      toast.error("Your browser does not support Speech Recognition. Please use Chrome or Edge.");
+      return;
+    }
+
     try {
-      // 1. Get token from backend
-      const res = await axiosInstance.get("/stt/token");
-      const { accessToken, url } = res.data;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
 
-      if (!accessToken) {
-        throw new Error("Failed to get STT access token");
-      }
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
 
-      // 2. Start Watson Speech STT
-      const stream = SpeechToTextV1.recognizeMicrophone({
-        accessToken,
-        url,
-        extractResults: true,
-        format: false, // Set to false to avoid PCM endianness errors
-        objectMode: true,
-        model: "en-US_BroadbandModel",
-        realtime: true,
-      });
-
-      streamRef.current = stream;
-      setIsRecording(true);
-
-      stream.on("data", (data) => {
-        if (data.results && data.results[0] && data.results[0].alternatives[0]) {
-          const transcript = data.results[0].alternatives[0].transcript;
-          onTranscript(transcript, data.results[0].final);
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
-      });
+        onTranscript(transcript, event.results[event.results.length - 1].isFinal);
+      };
 
-      stream.on("error", (err) => {
-        console.error("FULL STT ERROR OBJECT:", err);
-        const errorMsg = err.message || "Connection failed";
-        toast.error(`Speech to Text failed: ${errorMsg}. Check console for details.`);
+      recognition.onerror = (event) => {
+        console.error("Speech Recognition Error:", event.error);
+        if (event.error === "not-allowed") {
+          toast.error("Microphone permission denied.");
+        } else {
+          toast.error(`Speech Recognition failed: ${event.error}`);
+        }
         stopRecording();
-      });
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
 
     } catch (error) {
-      console.error("Error starting STT:", error);
-      toast.error(error.response?.data?.message || "Could not start Speech to Text");
+      console.error("Error starting Speech Recognition:", error);
+      toast.error("Could not start Speech Recognition");
       setIsRecording(false);
     }
   };
 
   const stopRecording = () => {
-    if (streamRef.current) {
-      streamRef.current.stop();
-      streamRef.current = null;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
     setIsRecording(false);
   };
