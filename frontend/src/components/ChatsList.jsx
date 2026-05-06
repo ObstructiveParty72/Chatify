@@ -27,7 +27,7 @@ function ChatsList() {
             <div className={`avatar ${!chat.isGroup && onlineUsers.includes(chat._id) ? "online" : "offline"}`}>
               <div className="size-12 rounded-full">
                 <img 
-                  src={chat.isGroup ? (chat.image || "/group.png") : (chat.profilePic || "/avatar.png")} 
+                  src={chat.isGroup ? (chat.image || "/Group_avatar.png") : (chat.profilePic || "/avatar.png")} 
                   alt={chat.isGroup ? chat.name : chat.fullName} 
                 />
               </div>
