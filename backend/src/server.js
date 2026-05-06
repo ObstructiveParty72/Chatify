@@ -82,6 +82,7 @@ if (ENV.APP_ID_CLIENT_ID && ENV.APP_ID_ISSUER) {
 }
 
 // ── Express middleware ──
+app.set("trust proxy", 1); // Required for sessions to work on Render/Heroku
 app.use(express.json({ limit: "5mb" }));
 app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
