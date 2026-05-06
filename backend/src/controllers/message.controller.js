@@ -1,7 +1,8 @@
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
-import { createMessage, findMessagesBetween, findChatPartnerIds } from "../models/Message.js";
+import { createMessage, findMessagesBetween, findChatPartnerIds, findMessagesByGroupId } from "../models/Message.js";
 import { findAllUsersExcept, findUsersByIds, userExists, findUserByEmail } from "../models/User.js";
+import { findGroupById, findGroupsByMember } from "../models/Group.js";
 import { sendInvitationEmail } from "../emails/emailHandlers.js";
 import { ENV } from "../lib/env.js";
 
@@ -20,9 +21,17 @@ export const getAllContacts = async (req, res) => {
 export const getMessagesByUserId = async (req, res) => {
   try {
     const myId = req.user._id;
-    const { id: userToChatId } = req.params;
+    const { id: chatId } = req.params;
 
-    const messages = await findMessagesBetween(myId, userToChatId);
+    // Check if chatId is a group or user
+    // First try group
+    const group = await findGroupById(chatId);
+    if (group) {
+      const messages = await findMessagesByGroupId(chatId);
+      return res.status(200).json(messages);
+    }
+
+    const messages = await findMessagesBetween(myId, chatId);
 
     res.status(200).json(messages);
   } catch (error) {
@@ -40,13 +49,6 @@ export const sendMessage = async (req, res) => {
     if (!text && !image) {
       return res.status(400).json({ message: "Text or image is required." });
     }
-    if (senderId === receiverId) {
-      return res.status(400).json({ message: "Cannot send messages to yourself." });
-    }
-    const receiverFound = await userExists(receiverId);
-    if (!receiverFound) {
-      return res.status(404).json({ message: "Receiver not found." });
-    }
 
     let imageUrl;
     if (image) {
@@ -55,11 +57,50 @@ export const sendMessage = async (req, res) => {
       imageUrl = uploadResponse.secure_url;
     }
 
+    // Check if receiver is a group
+    const group = await findGroupById(receiverId);
+    
+    if (group) {
+      // Group message
+      const newMessage = await createMessage({
+        senderId,
+        receiverId, // Using groupId as receiverId
+        text,
+        image: imageUrl,
+        senderName: req.user.fullName,
+        senderPic: req.user.profilePic,
+      });
+
+      // Broadcast to all members
+      group.members.forEach((memberId) => {
+        // Don't send back to sender if you want, or do. 
+        // Usually, socket.io emits to all in room. 
+        // Here we use userSocketMap.
+        const receiverSocketId = getReceiverSocketId(memberId);
+        if (receiverSocketId && memberId !== senderId) {
+          io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+      });
+
+      return res.status(201).json(newMessage);
+    }
+
+    // One-to-one message logic
+    if (senderId === receiverId) {
+      return res.status(400).json({ message: "Cannot send messages to yourself." });
+    }
+    const receiverFound = await userExists(receiverId);
+    if (!receiverFound) {
+      return res.status(404).json({ message: "Receiver not found." });
+    }
+
     const newMessage = await createMessage({
       senderId,
       receiverId,
       text,
       image: imageUrl,
+      senderName: req.user.fullName,
+      senderPic: req.user.profilePic,
     });
 
     const receiverSocketId = getReceiverSocketId(receiverId);
@@ -80,8 +121,13 @@ export const getChatPartners = async (req, res) => {
 
     const partnerIds = await findChatPartnerIds(loggedInUserId);
     const chatPartners = await findUsersByIds(partnerIds);
+    
+    const myGroups = await findGroupsByMember(loggedInUserId);
 
-    res.status(200).json(chatPartners);
+    // Combine users and groups
+    const allChats = [...chatPartners, ...myGroups];
+
+    res.status(200).json(allChats);
   } catch (error) {
     console.error("Error in getChatPartners: ", error.message);
     res.status(500).json({ error: "Internal server error" });

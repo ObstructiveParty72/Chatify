@@ -4,11 +4,12 @@ import { ENV } from "./env.js";
 
 const DB_USERS = "chatify_users";
 const DB_MESSAGES = "chatify_messages";
+const DB_GROUPS = "chatify_groups";
 
 let cloudant = null;
 
 export const getCloudant = () => cloudant;
-export { DB_USERS, DB_MESSAGES };
+export { DB_USERS, DB_MESSAGES, DB_GROUPS };
 
 export const connectDB = async () => {
   try {
@@ -22,7 +23,7 @@ export const connectDB = async () => {
     });
 
     // Create databases if they don't exist
-    for (const db of [DB_USERS, DB_MESSAGES]) {
+    for (const db of [DB_USERS, DB_MESSAGES, DB_GROUPS]) {
       try {
         await cloudant.putDatabase({ db });
         console.log(`Created database: ${db}`);

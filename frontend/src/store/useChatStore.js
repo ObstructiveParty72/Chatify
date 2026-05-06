@@ -94,6 +94,21 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  createGroup: async (groupData) => {
+    try {
+      const res = await axiosInstance.post("/groups/create", groupData);
+      set((state) => ({ 
+        chats: [res.data, ...state.chats],
+        selectedUser: res.data 
+      }));
+      toast.success("Group created successfully");
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create group");
+      return null;
+    }
+  },
+
   subscribeToMessages: () => {
     const { selectedUser, isSoundEnabled } = get();
     if (!selectedUser) return;
@@ -101,8 +116,11 @@ export const useChatStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket;
 
     socket.on("newMessage", (newMessage) => {
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
+      const isMessageForSelectedUser = 
+        (selectedUser.isGroup && newMessage.receiverId === selectedUser._id) || 
+        (!selectedUser.isGroup && newMessage.senderId === selectedUser._id);
+        
+      if (!isMessageForSelectedUser) return;
 
       const currentMessages = get().messages;
       set({ messages: [...currentMessages, newMessage] });

@@ -2,7 +2,7 @@ import { getCloudant, DB_MESSAGES } from "../lib/db.js";
 import { generateId } from "../lib/utils.js";
 
 // Save a new message document to Cloudant
-export async function createMessage({ senderId, receiverId, text, image }) {
+export async function createMessage({ senderId, receiverId, text, image, senderName, senderPic }) {
   const cloudant = getCloudant();
 
   const doc = {
@@ -12,6 +12,8 @@ export async function createMessage({ senderId, receiverId, text, image }) {
     receiverId,
     text: text || "",
     image: image || "",
+    senderName: senderName || "",
+    senderPic: senderPic || "",
     createdAt: new Date().toISOString(),
   };
 
@@ -31,6 +33,23 @@ export async function findMessagesBetween(userIdA, userIdB) {
         { senderId: userIdA, receiverId: userIdB },
         { senderId: userIdB, receiverId: userIdA },
       ],
+    },
+    sort: [{ createdAt: "asc" }],
+    limit: 500,
+  });
+
+  return response.result.docs.map(sanitizeMessage);
+}
+
+// Find messages for a group
+export async function findMessagesByGroupId(groupId) {
+  const cloudant = getCloudant();
+
+  const response = await cloudant.postFind({
+    db: DB_MESSAGES,
+    selector: {
+      type: "message",
+      receiverId: groupId,
     },
     sort: [{ createdAt: "asc" }],
     limit: 500,
@@ -70,6 +89,8 @@ function sanitizeMessage(doc) {
     receiverId: doc.receiverId,
     text: doc.text || "",
     image: doc.image || "",
+    senderName: doc.senderName || "",
+    senderPic: doc.senderPic || "",
     createdAt: doc.createdAt,
   };
 }

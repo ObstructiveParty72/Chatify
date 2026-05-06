@@ -8,6 +8,7 @@ import { Strategy as OpenIDConnectStrategy } from "passport-openidconnect";
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import groupRoutes from "./routes/group.route.js";
 import { connectDB } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
 import { app, server, io, setupSocketHandlers } from "./lib/socket.js";
@@ -106,6 +107,7 @@ app.use((req, res, next) => {
 // ── Routes ──
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/groups", groupRoutes);
 
 // Health check route for Render
 app.get("/health", (req, res) => res.status(200).send("OK"));
