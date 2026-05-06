@@ -1,5 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
-import { createGroup, findGroupsByMember, findGroupById } from "../models/Group.js";
+import { createGroup, findGroupsByMember, findGroupById, updateGroup } from "../models/Group.js";
 import { findMessagesByGroupId } from "../models/Message.js";
 
 export const createNewGroup = async (req, res) => {
@@ -56,6 +56,40 @@ export const getGroupMessages = async (req, res) => {
     res.status(200).json(messages);
   } catch (error) {
     console.error("Error in getGroupMessages:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateExistingGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { name, description, image, members } = req.body;
+    const userId = req.user._id;
+
+    const group = await findGroupById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    // Only admin can update group
+    if (group.adminId !== userId) {
+      return res.status(403).json({ message: "Only admin can update group settings" });
+    }
+
+    let imageUrl = image;
+    if (image && image.startsWith("data:image")) {
+      const uploadResponse = await cloudinary.uploader.upload(image);
+      imageUrl = uploadResponse.secure_url;
+    }
+
+    const updatedGroup = await updateGroup(groupId, {
+      name,
+      description,
+      image: imageUrl,
+      members,
+    });
+
+    res.status(200).json(updatedGroup);
+  } catch (error) {
+    console.error("Error in updateExistingGroup:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

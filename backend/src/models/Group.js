@@ -45,6 +45,23 @@ export async function findGroupById(groupId) {
   }
 }
 
+export async function updateGroup(groupId, { name, description, image, members }) {
+  const cloudant = getCloudant();
+  
+  const response = await cloudant.getDocument({ db: DB_GROUPS, docId: groupId });
+  const doc = response.result;
+
+  if (name) doc.name = name;
+  if (description !== undefined) doc.description = description;
+  if (image) doc.image = image;
+  if (members) doc.members = members;
+  
+  doc.updatedAt = new Date().toISOString();
+
+  await cloudant.postDocument({ db: DB_GROUPS, document: doc });
+  return sanitizeGroup(doc);
+}
+
 function sanitizeGroup(doc) {
   return {
     _id: doc._id,

@@ -1,12 +1,15 @@
-import { XIcon } from "lucide-react";
+import { XIcon, Settings } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import CreateGroupModal from "./CreateGroupModal";
 
 function ChatHeader() {
   const { selectedUser, setSelectedUser } = useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, authUser } = useAuthStore();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isOnline = !selectedUser.isGroup && onlineUsers.includes(selectedUser._id);
+  const isAdmin = selectedUser.isGroup && selectedUser.adminId === authUser._id;
 
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -42,9 +45,25 @@ function ChatHeader() {
         </div>
       </div>
 
-      <button onClick={() => setSelectedUser(null)}>
-        <XIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
-      </button>
+      <div className="flex items-center gap-4">
+        {selectedUser.isGroup && isAdmin && (
+          <button onClick={() => setIsSettingsOpen(true)}>
+            <Settings className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
+          </button>
+        )}
+        <button onClick={() => setSelectedUser(null)}>
+          <XIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
+        </button>
+      </div>
+
+      {isSettingsOpen && (
+        <CreateGroupModal 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          editMode={true}
+          groupData={selectedUser}
+        />
+      )}
     </div>
   );
 }

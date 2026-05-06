@@ -50,6 +50,28 @@ export const connectDB = async () => {
 
     try {
       await cloudant.postIndex({
+        db: DB_MESSAGES,
+        index: { fields: ["type", "senderId", "receiverId"] },
+        name: "message-participants-index",
+        type: "json",
+      });
+    } catch (error) {
+      if (error.status !== 409) console.warn("Index creation warning:", error.message);
+    }
+
+    try {
+      await cloudant.postIndex({
+        db: DB_GROUPS,
+        index: { fields: ["type", "members"] },
+        name: "group-members-index",
+        type: "json",
+      });
+    } catch (error) {
+      if (error.status !== 409) console.warn("Index creation warning:", error.message);
+    }
+
+    try {
+      await cloudant.postIndex({
         db: DB_USERS,
         index: { fields: ["email"] },
         name: "email-index",

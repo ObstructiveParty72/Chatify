@@ -1,14 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Camera, Users } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 
-function CreateGroupModal({ isOpen, onClose }) {
-  const { allContacts, createGroup } = useChatStore();
+function CreateGroupModal({ isOpen, onClose, editMode = false, groupData = null }) {
+  const { allContacts, createGroup, updateGroup } = useChatStore();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [image, setImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editMode && groupData) {
+      setName(groupData.name || "");
+      setDescription(groupData.description || "");
+      setSelectedMembers(groupData.members || []);
+      setImage(groupData.image || null);
+    } else {
+      setName("");
+      setDescription("");
+      setSelectedMembers([]);
+      setImage(null);
+    }
+  }, [editMode, groupData, isOpen]);
 
   if (!isOpen) return null;
 
@@ -34,12 +48,22 @@ function CreateGroupModal({ isOpen, onClose }) {
     if (!name || selectedMembers.length === 0) return;
 
     setIsSubmitting(true);
-    const res = await createGroup({
-      name,
-      description,
-      members: selectedMembers,
-      image,
-    });
+    let res;
+    if (editMode) {
+      res = await updateGroup(groupData._id, {
+        name,
+        description,
+        members: selectedMembers,
+        image,
+      });
+    } else {
+      res = await createGroup({
+        name,
+        description,
+        members: selectedMembers,
+        image,
+      });
+    }
     setIsSubmitting(false);
 
     if (res) {
@@ -48,20 +72,20 @@ function CreateGroupModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
           <h2 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
             <Users className="text-cyan-500" size={24} />
-            Create New Group
+            {editMode ? "Group Settings" : "Create New Group"}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-100 transition-colors">
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
           {/* Group Image */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative group">
@@ -77,7 +101,7 @@ function CreateGroupModal({ isOpen, onClose }) {
                 <Camera className="text-white" size={24} />
               </label>
             </div>
-            <p className="text-xs text-slate-400">Add a group icon</p>
+            <p className="text-xs text-slate-400">{editMode ? "Change group icon" : "Add a group icon"}</p>
           </div>
 
           {/* Group Name */}
@@ -93,9 +117,22 @@ function CreateGroupModal({ isOpen, onClose }) {
             />
           </div>
 
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-300">Description (Optional)</label>
+            <textarea
+              placeholder="What's this group about?"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors resize-none h-20"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
           {/* Members List */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-300">Select Members ({selectedMembers.length})</label>
+            <label className="text-sm font-medium text-slate-300">
+              {editMode ? "Manage Members" : "Select Members"} ({selectedMembers.length})
+            </label>
             <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               {allContacts.map((contact) => (
                 <div
@@ -119,7 +156,7 @@ function CreateGroupModal({ isOpen, onClose }) {
             disabled={isSubmitting || !name || selectedMembers.length === 0}
             className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-cyan-600/20"
           >
-            {isSubmitting ? "Creating..." : "Create Group"}
+            {isSubmitting ? "Saving..." : (editMode ? "Update Group" : "Create Group")}
           </button>
         </form>
       </div>

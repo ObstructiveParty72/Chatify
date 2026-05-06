@@ -2,12 +2,14 @@ import { useRef, useState } from "react";
 import useKeyboardSound from "../hooks/useKeyboardSound";
 import { useChatStore } from "../store/useChatStore";
 import toast from "react-hot-toast";
-import { ImageIcon, SendIcon, XIcon } from "lucide-react";
+import { ImageIcon, SendIcon, XIcon, MicIcon, SquareIcon } from "lucide-react";
+import { useSTT } from "../hooks/useSTT";
 
 function MessageInput() {
   const { playRandomKeyStrokeSound } = useKeyboardSound();
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const { isRecording, startRecording, stopRecording } = useSTT();
 
   const fileInputRef = useRef(null);
 
@@ -25,6 +27,19 @@ function MessageInput() {
     setText("");
     setImagePreview("");
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (isRecording) stopRecording();
+  };
+
+  const handleToggleMic = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      const initialText = text;
+      startRecording((transcript, isFinal) => {
+        // Append the new transcript to the text that was there before recording started
+        setText(initialText + (initialText ? " " : "") + transcript);
+      });
+    }
   };
 
   const handleImageChange = (e) => {
@@ -84,6 +99,19 @@ function MessageInput() {
           onChange={handleImageChange}
           className="hidden"
         />
+
+        <button
+          type="button"
+          onClick={handleToggleMic}
+          className={`px-3 rounded-lg transition-all ${
+            isRecording 
+              ? "bg-red-500/20 text-red-500 animate-pulse border border-red-500/50" 
+              : "bg-slate-800/50 text-slate-400 hover:text-slate-200"
+          }`}
+          title={isRecording ? "Stop Recording" : "Voice to Text"}
+        >
+          {isRecording ? <SquareIcon className="w-5 h-5" /> : <MicIcon className="w-5 h-5" />}
+        </button>
 
         <button
           type="button"
