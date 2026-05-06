@@ -2,6 +2,7 @@ import express from "express";
 import passport from "passport";
 import { logout, checkAuth, updateProfile, appIdCallback } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
+import { ENV } from "../lib/env.js";
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get("/login", passport.authenticate("appid"));
 // IBM App ID redirects back here after user logs in
 router.get(
   "/callback",
-  passport.authenticate("appid", { failureRedirect: "http://localhost:5173/login" }),
+  passport.authenticate("appid", { failureRedirect: (ENV.CLIENT_URL || "") + "/login" }),
   appIdCallback
 );
 
