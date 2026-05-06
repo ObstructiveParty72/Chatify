@@ -1,65 +1,61 @@
 import { useState, useRef } from "react";
+import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
 export const useSTT = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
-  const startRecording = (onTranscript) => {
-    // Check for browser support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      toast.error("Your browser does not support Speech Recognition. Please use Chrome or Edge.");
-      return;
-    }
-
+  const startRecording = async (onTranscript) => {
     try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-
-      recognition.onresult = (event) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-        onTranscript(transcript, event.results[event.results.length - 1].isFinal);
       };
 
-      recognition.onerror = (event) => {
-        console.error("Speech Recognition Error:", event.error);
-        if (event.error === "not-allowed") {
-          toast.error("Microphone permission denied.");
-        } else {
-          toast.error(`Speech Recognition failed: ${event.error}`);
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        
+        // Stop all tracks in the stream
+        stream.getTracks().forEach(track => track.stop());
+
+        // Send to backend for IBM transcription
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.webm");
+
+        const loadingToast = toast.loading("Transcribing...");
+        try {
+          const res = await axiosInstance.post("/stt/recognize", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          onTranscript(res.data.transcript, true);
+          toast.success("Transcribed!", { id: loadingToast });
+        } catch (error) {
+          console.error("Transcription error:", error);
+          toast.error("Transcription failed. Please try again.", { id: loadingToast });
         }
-        stopRecording();
       };
 
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognition.start();
-      recognitionRef.current = recognition;
-
+      mediaRecorder.start();
+      setIsRecording(true);
     } catch (error) {
-      console.error("Error starting Speech Recognition:", error);
-      toast.error("Could not start Speech Recognition");
+      console.error("Error starting recording:", error);
+      toast.error("Could not access microphone.");
       setIsRecording(false);
     }
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
     }
     setIsRecording(false);
   };

@@ -21,6 +21,7 @@
     "express-session": "^1.18.0",
     "ibm-cloud-sdk-core": "^5.1.0",
     "ibm-watson": "^12.2.0",
+    "multer": "^2.1.1",
     "passport": "^0.7.0",
     "passport-openidconnect": "^0.1.2",
     "resend": "^6.0.2",
