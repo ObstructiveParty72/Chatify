@@ -91,15 +91,17 @@ app.use(cors({ origin: corsOrigin, credentials: true }));
 
 app.use(cookieParser());
 
-// Debug middleware to see sessions in logs
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} - Has Session: ${!!req.session} - Is Authenticated: ${req.isAuthenticated ? req.isAuthenticated() : 'N/A'}`);
-  next();
-});
-
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Debug middleware to see sessions in logs (NOW AFTER SESSION LOADS)
+app.use((req, res, next) => {
+  if (req.url.includes("/api/auth")) {
+    console.log(`${req.method} ${req.url} - Has Session: ${!!req.session} - Is Authenticated: ${req.isAuthenticated ? req.isAuthenticated() : 'N/A'}`);
+  }
+  next();
+});
 
 // ── Routes ──
 app.use("/api/auth", authRoutes);
