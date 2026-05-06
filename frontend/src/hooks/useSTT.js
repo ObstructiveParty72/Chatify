@@ -23,8 +23,11 @@ export const useSTT = () => {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        console.log("Audio blob size:", audioBlob.size, "bytes");
         
-        // Stop all tracks in the stream
+        if (audioBlob.size < 100) {
+           console.warn("Audio blob is too small, recording might have failed.");
+        }
         stream.getTracks().forEach(track => track.stop());
 
         // Send to backend for IBM transcription

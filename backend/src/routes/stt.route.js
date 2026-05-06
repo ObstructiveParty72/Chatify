@@ -15,6 +15,8 @@ router.post("/recognize", protectRoute, upload.single("audio"), async (req, res)
       return res.status(500).json({ message: "Speech to Text not configured" });
     }
 
+    console.log("Processing audio file:", req.file.path, "MimeType:", req.file.mimetype);
+
     const speechToText = new SpeechToTextV1({
       authenticator: new IamAuthenticator({
         apikey: ENV.SPEECH_TO_TEXT_APIKEY,
@@ -24,8 +26,8 @@ router.post("/recognize", protectRoute, upload.single("audio"), async (req, res)
 
     const params = {
       audio: fs.createReadStream(req.file.path),
-      contentType: req.file.mimetype,
-      model: "en-US_BroadbandModel",
+      contentType: req.file.mimetype === "audio/octet-stream" ? "audio/webm" : req.file.mimetype,
+      model: "en-US_Multimedia", // Modern model that handles various formats better
     };
 
     const response = await speechToText.recognize(params);
