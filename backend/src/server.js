@@ -82,10 +82,21 @@ if (ENV.APP_ID_CLIENT_ID && ENV.APP_ID_ISSUER) {
 }
 
 // ── Express middleware ──
-app.set("trust proxy", 1); // Required for sessions to work on Render/Heroku
+app.set("trust proxy", 1); 
 app.use(express.json({ limit: "5mb" }));
-app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+
+// Robust CORS setup
+const corsOrigin = ENV.CLIENT_URL ? ENV.CLIENT_URL.replace(/\/$/, "") : "*";
+app.use(cors({ origin: corsOrigin, credentials: true }));
+
 app.use(cookieParser());
+
+// Debug middleware to see sessions in logs
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} - Has Session: ${!!req.session} - Is Authenticated: ${req.isAuthenticated ? req.isAuthenticated() : 'N/A'}`);
+  next();
+});
+
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
