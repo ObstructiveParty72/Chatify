@@ -34,10 +34,18 @@ function MessageInput() {
     if (isRecording) {
       stopRecording();
     } else {
-      const initialText = text;
-      startRecording((transcript, isFinal) => {
-        if (!transcript.trim()) return;
-        setText((prev) => prev + (prev ? " " : "") + transcript.trim());
+      console.log("Starting recording...");
+      startRecording((transcript) => {
+        console.log("Transcript handler called with:", transcript);
+        if (!transcript || !transcript.trim()) {
+          console.warn("Received empty transcript");
+          return;
+        }
+        setText((prev) => {
+          const next = prev + (prev ? " " : "") + transcript.trim();
+          console.log("Setting text to:", next);
+          return next;
+        });
       });
     }
   };

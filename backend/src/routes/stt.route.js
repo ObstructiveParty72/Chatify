@@ -33,10 +33,11 @@ router.post("/recognize", protectRoute, upload.single("audio"), async (req, res)
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
 
-    const transcript = response.result.results
-      .map(result => result.alternatives[0].transcript)
-      .join("");
+    const transcript = response.result?.results
+      ?.map(result => result.alternatives?.[0]?.transcript || "")
+      .join("") || "";
 
+    console.log("Transcription result:", transcript);
     res.json({ transcript });
   } catch (error) {
     console.error("Error transcribing audio:", error);
