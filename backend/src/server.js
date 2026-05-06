@@ -21,8 +21,8 @@ const PORT = ENV.PORT || 3000;
 // ── Session middleware (shared between Express and Socket.IO) ──
 const sessionMiddleware = session({
   secret: ENV.SESSION_SECRET || "change-this-in-production",
-  resave: false,
-  saveUninitialized: false,
+  resave: true, // Force session to be saved back to the session store
+  saveUninitialized: true, // Force a session that is "new" but not modified to be saved
   cookie: {
     httpOnly: true,
     sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
@@ -98,7 +98,7 @@ app.use(passport.session());
 // Debug middleware to see sessions in logs (NOW AFTER SESSION LOADS)
 app.use((req, res, next) => {
   if (req.url.includes("/api/auth")) {
-    console.log(`${req.method} ${req.url} - Has Session: ${!!req.session} - Is Authenticated: ${req.isAuthenticated ? req.isAuthenticated() : 'N/A'}`);
+    console.log(`${req.method} ${req.url} - Has Session: ${!!req.session} - Passport: ${req.session?.passport ? "Present" : "Missing"} - Auth: ${req.isAuthenticated()}`);
   }
   next();
 });

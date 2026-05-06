@@ -16,11 +16,14 @@ export const appIdCallback = async (req, res) => {
       console.error("Failed to send welcome email:", error);
     }
 
-    // Redirect to the frontend
-    res.redirect(ENV.CLIENT_URL || "/");
+    // Explicitly save session before redirecting
+    req.session.save((err) => {
+      if (err) console.error("Session save error:", err);
+      res.redirect(ENV.CLIENT_URL || "/");
+    });
   } catch (error) {
     console.error("Error in App ID callback:", error);
-    res.redirect(ENV.CLIENT_URL + "/login?error=auth_failed");
+    res.redirect((ENV.CLIENT_URL || "") + "/login?error=auth_failed");
   }
 };
 
