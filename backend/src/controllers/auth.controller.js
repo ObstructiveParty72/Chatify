@@ -5,9 +5,14 @@ import cloudinary from "../lib/cloudinary.js";
 
 // Called after IBM App ID login succeeds — upserts user in Cloudant
 export const appIdCallback = async (req, res) => {
+  console.log("Entering appIdCallback. User:", !!req.user, "SessionID:", req.sessionID);
+  
   try {
-    // req.user is set by Passport after successful App ID authentication
     const user = req.user;
+    if (!user) {
+      console.error("No user found in request after passport auth");
+      return res.redirect((ENV.CLIENT_URL || "") + "/login?error=no_user");
+    }
 
     // Send welcome email on first login (best-effort)
     try {

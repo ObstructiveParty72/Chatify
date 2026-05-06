@@ -98,7 +98,7 @@ app.use(passport.session());
 // Debug middleware to see sessions in logs (NOW AFTER SESSION LOADS)
 app.use((req, res, next) => {
   if (req.url.includes("/api/auth")) {
-    console.log(`${req.method} ${req.url} - Has Session: ${!!req.session} - Passport: ${req.session?.passport ? "Present" : "Missing"} - Auth: ${req.isAuthenticated()}`);
+    console.log(`${req.method} ${req.url} - ID: ${req.sessionID} - Passport: ${req.session?.passport ? "Present" : "Missing"} - Auth: ${req.isAuthenticated()}`);
   }
   next();
 });
