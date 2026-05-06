@@ -22,9 +22,10 @@ export const useSTT = () => {
         accessToken,
         url,
         extractResults: true,
-        format: true,
+        format: false, // Set to false to avoid PCM endianness errors
         objectMode: true,
         model: "en-US_BroadbandModel",
+        realtime: true,
       });
 
       streamRef.current = stream;
