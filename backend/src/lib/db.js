@@ -51,8 +51,8 @@ export const connectDB = async () => {
     try {
       await cloudant.postIndex({
         db: DB_MESSAGES,
-        index: { fields: ["type", "senderId", "receiverId"] },
-        name: "message-participants-index",
+        index: { fields: ["type", "senderId", "receiverId", "createdAt"] },
+        name: "message-participants-date-index",
         type: "json",
       });
     } catch (error) {
@@ -62,8 +62,8 @@ export const connectDB = async () => {
     try {
       await cloudant.postIndex({
         db: DB_GROUPS,
-        index: { fields: ["type", "members"] },
-        name: "group-members-index",
+        index: { fields: ["type", "members", "createdAt"] },
+        name: "group-members-date-index",
         type: "json",
       });
     } catch (error) {
