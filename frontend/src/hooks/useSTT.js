@@ -36,6 +36,7 @@ export const useSTT = () => {
           const res = await axiosInstance.post("/stt/recognize", formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
+          console.log("Transcript received:", res.data.transcript);
           onTranscript(res.data.transcript, true);
           toast.success("Transcribed!", { id: loadingToast });
         } catch (error) {

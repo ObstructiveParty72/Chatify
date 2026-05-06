@@ -36,8 +36,8 @@ function MessageInput() {
     } else {
       const initialText = text;
       startRecording((transcript, isFinal) => {
-        // Append the new transcript to the text that was there before recording started
-        setText(initialText + (initialText ? " " : "") + transcript);
+        if (!transcript.trim()) return;
+        setText((prev) => prev + (prev ? " " : "") + transcript.trim());
       });
     }
   };
