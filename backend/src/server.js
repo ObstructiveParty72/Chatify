@@ -94,6 +94,9 @@ app.use(passport.session());
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
+// Health check route for Render
+app.get("/health", (req, res) => res.status(200).send("OK"));
+
 // ── Socket.IO auth (uses the same session middleware) ──
 io.use(createSocketAuthMiddleware(sessionMiddleware));
 setupSocketHandlers();
@@ -108,7 +111,8 @@ if (ENV.NODE_ENV === "production") {
 }
 
 // ── Start ──
-server.listen(PORT, () => {
-  console.log("Server running on port: " + PORT);
-  connectDB();
+connectDB().then(() => {
+  server.listen(PORT, () => {
+    console.log("Server running on port: " + PORT);
+  });
 });
